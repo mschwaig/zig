@@ -1336,11 +1336,6 @@ struct GlobalExport {
     GlobalLinkageId linkage;
 };
 
-struct FnCall {
-    AstNode *source_node;
-    ZigFn *callee;
-};
-
 struct ZigFn {
     LLVMValueRef llvm_value;
     const char *llvm_name;
@@ -1387,7 +1382,7 @@ struct ZigFn {
     ZigFn *inferred_async_fn;
 
     ZigList<GlobalExport> export_list;
-    ZigList<FnCall> call_list;
+    ZigList<IrInstructionCallGen *> call_list;
 
     LLVMValueRef valgrind_client_request_array;
     LLVMBasicBlockRef preamble_llvm_block;
@@ -2585,6 +2580,7 @@ struct IrInstructionCallGen {
     size_t arg_count;
     IrInstruction **args;
     IrInstruction *result_loc;
+    IrInstruction *frame_result_loc;
 
     IrInstruction *new_stack;
     FnInline fn_inline;
@@ -3645,7 +3641,10 @@ static const size_t err_union_err_index = 0;
 static const size_t err_union_payload_index = 1;
 
 static const size_t coro_resume_index_index = 0;
-static const size_t coro_arg_start = 1;
+static const size_t coro_fn_ptr_index = 1;
+static const size_t coro_awaiter_index = 2;
+static const size_t coro_result_ptr_index = 3;
+static const size_t coro_arg_start = 4;
 
 // TODO call graph analysis to find out what this number needs to be for every function
 // MUST BE A POWER OF TWO.

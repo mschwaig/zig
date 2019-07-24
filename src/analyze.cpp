@@ -1897,7 +1897,17 @@ static Error resolve_coro_frame(CodeGen *g, ZigType *frame_type) {
     field_names.append("resume_index");
     field_types.append(g->builtin_types.entry_usize);
 
+    field_names.append("fn_ptr");
+    field_types.append(fn->type_entry);
+
+    field_names.append("awaiter");
+    field_types.append(g->builtin_types.entry_usize);
+
     FnTypeId *fn_type_id = &fn->type_entry->data.fn.fn_type_id;
+    ZigType *ptr_return_type = get_pointer_to_type(g, fn_type_id->return_type, false);
+    field_names.append("result_ptr");
+    field_types.append(ptr_return_type);
+
     field_names.append("result");
     field_types.append(fn_type_id->return_type);
 
@@ -3806,6 +3816,30 @@ bool resolve_inferred_error_set(CodeGen *g, ZigType *err_set_type, AstNode *sour
 
 static void resolve_async_fn_frame(CodeGen *g, ZigFn *fn) {
     ZigType *frame_type = get_coro_frame_type(g, fn);
+    if (frame_type->data.frame.locals_struct != nullptr)
+        return;
+
+    for (size_t i = 0; i < fn->call_list.length; i += 1) {
+        IrInstructionCallGen *call = &fn->call_list.at(i);
+        ZigFn *callee = call->fn_entry;
+        assert(callee != nullptr);
+
+        IrBasicBlock *new_resume_block = allocate<IrBasicBlock>(1);
+        new_resume_block->name_hint = "CallResume";
+        fn->resume_blocks.append(new_resume_block);
+        call->resume_block = new_resume_block;
+
+        IrInstructionAllocaGen *alloca_gen = ir_create_alloca_gen(ira, suspend_source_instr, 0, "");
+            alloca_gen->base.value.type = get_pointer_to_type_extra(ira->codegen, value_type, false, false,
+                    PtrLenSingle, 0, 0, 0, false);
+            set_up_result_loc_for_inferred_comptime(&alloca_gen->base);
+            ZigFn *fn_entry = exec_fn_entry(ira->new_irb.exec);
+            if (fn_entry != nullptr) {
+                fn_entry->alloca_gen_list.append(alloca_gen);
+            }
+        call->frame_result_loc = aeou;
+    }
+
     Error err;
     if ((err = type_resolve(g, frame_type, ResolveStatusSizeKnown))) {
         fn->anal_state = FnAnalStateInvalid;
