@@ -1767,7 +1767,7 @@ static Error resolve_union_alignment(CodeGen *g, ZigType *union_type) {
             this_field_align = 1;
         // This is the same hack as resolve_struct_alignment. See the comment there.
         } else if (field->type_entry == nullptr) {
-            this_field_align = g->builtin_types.entry_usize->abi_align;
+            this_field_align = g->builtin_types.entry_usize->abi_align * 2;
         } else {
             if ((err = type_resolve(g, field->type_entry, ResolveStatusAlignmentKnown))) {
                 union_type->data.unionation.resolve_status = ResolveStatusInvalid;
@@ -2277,7 +2277,7 @@ static Error resolve_struct_alignment(CodeGen *g, ZigType *struct_type) {
         // field, which is usually fine but could be incorrectly over-aligned or
         // even under-aligned. See https://github.com/ziglang/zig/issues/1512
         } else if (field->type_entry == nullptr) {
-            this_field_align = g->builtin_types.entry_usize->abi_align;
+            this_field_align = g->builtin_types.entry_usize->abi_align * 2;
         } else {
             if ((err = type_resolve(g, field->type_entry, ResolveStatusAlignmentKnown))) {
                 struct_type->data.structure.resolve_status = ResolveStatusInvalid;
