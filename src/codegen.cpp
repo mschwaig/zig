@@ -1860,7 +1860,6 @@ static LLVMValueRef gen_assign_raw(CodeGen *g, LLVMValueRef ptr, ZigType *ptr_ty
 
     LLVMValueRef containing_int = gen_load(g, ptr, ptr_type, "");
     uint32_t host_bit_count = LLVMGetIntTypeWidth(LLVMTypeOf(containing_int));
-    assert(host_bit_count == host_int_bytes * 8);
     uint32_t size_in_bits = type_size_bits(g, child_type);
 
     uint32_t bit_offset = ptr_type->data.pointer.bit_offset_in_host;
@@ -3270,7 +3269,6 @@ static LLVMValueRef ir_render_load_ptr(CodeGen *g, IrExecutable *executable, IrI
 
     LLVMValueRef containing_int = gen_load(g, ptr, ptr_type, "");
     uint32_t host_bit_count = LLVMGetIntTypeWidth(LLVMTypeOf(containing_int));
-    assert(host_bit_count == host_int_bytes * 8);
     uint32_t size_in_bits = type_size_bits(g, child_type);
 
     uint32_t bit_offset = ptr_type->data.pointer.bit_offset_in_host;
