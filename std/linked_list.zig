@@ -106,6 +106,27 @@ pub fn SinglyLinkedList(comptime T: type) type {
             return first;
         }
 
+        /// Return the first node in the list without removing it from the list.
+        ///
+        /// Returns:
+        ///     A pointer to the first node in the list.
+        pub fn peekFirst(list: *Self) ?*Node {
+            return list.first;
+        }
+
+        pub fn insertSorted(list: *Self, new_node: *Node, lessThan: fn (lhs: T, rhs: T) bool) void {
+
+            if (list.first == null or lessThan(new_node.data, list.first.?.data)) {
+                prepend(list, new_node);
+            } else {
+                var node = list.first.?;
+                while (node.next != null and lessThan(node.next.?.data, new_node.data)){
+                    node = node.next.?;
+                }
+                list.insertAfter(node, new_node);
+            }
+        }
+
         /// Allocate a new node.
         ///
         /// Arguments:
@@ -182,6 +203,45 @@ test "basic SinglyLinkedList test" {
     testing.expect(list.first.?.data == 2);
     testing.expect(list.first.?.next.?.data == 4);
     testing.expect(list.first.?.next.?.next == null);
+}
+
+fn lt(lhs: u32, rhs: u32) bool {
+    return lhs < rhs;
+}
+
+test "sorted SinglyLinkedList test" {
+    const allocator = debug.global_allocator;
+    var list = SinglyLinkedList(u32).init();
+
+    var one = try list.createNode(1, allocator);
+    var two = try list.createNode(2, allocator);
+    var three = try list.createNode(3, allocator);
+    var four = try list.createNode(4, allocator);
+    var five = try list.createNode(5, allocator);
+    defer {
+        list.destroyNode(one, allocator);
+        list.destroyNode(two, allocator);
+        list.destroyNode(three, allocator);
+        list.destroyNode(four, allocator);
+        list.destroyNode(five, allocator);
+    }
+
+    list.insertSorted(two, lt); // {2}
+    list.insertSorted(five, lt); // {2, 5}
+    list.insertSorted(one, lt); // {1, 2, 5}
+    list.insertSorted(three, lt); // {1, 2, 3, 5}
+    list.insertSorted(four, lt); // {1, 2, 3, 4, 5}
+
+    // Traverse forwards.
+    {
+        var it = list.first;
+        var index: u32 = 1;
+        while (it) |node| : (it = node.next) {
+            std.debug.warn("{} {}", node.data, index);
+            testing.expect(node.data == index);
+            index += 1;
+        }
+    }
 }
 
 /// A tail queue is headed by a pair of pointers, one to the head of the
